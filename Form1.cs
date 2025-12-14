@@ -4,6 +4,9 @@ using iText.Layout;
 using iText.Layout.Element;
 using iText.Kernel.Geom;
 using System.Diagnostics;
+using iText.Kernel.Font;
+using iText.IO.Font;
+using static iText.Kernel.Font.PdfFontFactory;
 
 namespace Image2PDF
 {
@@ -14,6 +17,12 @@ namespace Image2PDF
         int fileCount = 0;
         string selected_path;
         string csv_path;
+        bool ScaleToFit = false;
+        bool ScaleAbsolute = false;
+
+        Font selectedFont = new Font("Arial", 12);
+        Color selectedColor = Color.Black;
+
         public frmMain() => InitializeComponent();
         public static int SearchDirectoryTree(string path, out string[] IMGfiles)
         {
@@ -27,9 +36,6 @@ namespace Image2PDF
                 .ToArray();
             return IMGfiles.Length;
         }
-
-        bool ScaleToFit = false;
-        bool ScaleAbsolute = false;
 
         private void btnLoadFolder_Click(object sender, EventArgs e)
         {
@@ -47,7 +53,6 @@ namespace Image2PDF
                 // Clear the Alert message and success message
                 lblDone.Text = "";
                 lblAlert.Text = "";
-                //IMGDone.Visible = false;
             }
         }
 
@@ -95,7 +100,7 @@ namespace Image2PDF
             // Check if the user has been selected a folder
             if (IMGfiles == null)
             {
-                lblAlert.Text = "Please select or Drag your folder and try again!";
+                lblAlert.Text = "Please select your folder and try again!";
                 return;
             }
 
@@ -106,7 +111,7 @@ namespace Image2PDF
                 return;
             }
 
-            if(csv_path == null)
+            if (csv_path == null)
             {
                 lblAlert.Text = "Please select your CSV file and try again!";
                 return;
@@ -160,16 +165,33 @@ namespace Image2PDF
                     document.Add(image);
 
                     // Add text positioned over the image
+                    PdfFont pdfFont = CreatePdfFont(selectedFont);
+
                     Paragraph text = new Paragraph(csvRow.ImageName + "\n X = " + csvRow.X + ", Y = " + csvRow.Y)
-                        .SetFontSize(12)
-                        .SetFontColor(iText.Kernel.Colors.ColorConstants.BLACK);
+                        .SetFont(pdfFont)
+                        .SetFontSize(selectedFont.Size)
+                        .SetFontColor(ConvertColor(selectedColor));
+
+                    if (selectedFont.Bold)
+                        text.SimulateBold();
+
+                    if (selectedFont.Italic)
+                        text.SimulateItalic();
+
+                    if (selectedFont.Underline)
+                        text.SetUnderline();
+
+                    // Convert String to Integer 
+                    int x = Convert.ToInt32(txtBoxX.Text);
+                    int y = Convert.ToInt32(txtBoxY.Text);
+                    int width = Convert.ToInt32(txtBoxWidth.Text);
 
                     // Absolute positioning (X, Y)
                     text.SetFixedPosition(
                         1,      // page number
-                        50,    // X position
-                        750,    // Y position
-                        500     // width
+                        x,    // X position
+                        y,    // Y position
+                        width     // width
                     );
 
                     document.Add(text);
@@ -209,7 +231,7 @@ namespace Image2PDF
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             // Go to Github repository
-            string url = "https://github.com/abdessalam-aadel";
+            string url = "https://github.com/abdessalam-aadel/Image2PDF";
 
             // Open the URL in the default web browser
             try
@@ -225,6 +247,65 @@ namespace Image2PDF
                 MessageBox.Show($"An error occurred: {ex.Message}");
             }
         }
+
+        PdfFont CreatePdfFont(Font winFont)
+        {
+            string fontPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Fonts),
+                winFont.Name + ".ttf"
+            );
+
+            // fallback if font not found
+            if (!File.Exists(fontPath))
+                fontPath = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Fonts),
+                    "arial.ttf"
+                );
+
+            return PdfFontFactory.CreateFont(
+                fontPath,
+                PdfEncodings.IDENTITY_H,
+                EmbeddingStrategy.PREFER_EMBEDDED
+            );
+        }
+
+        iText.Kernel.Colors.Color ConvertColor(Color c)
+        {
+            return new iText.Kernel.Colors.DeviceRgb(c.R, c.G, c.B);
+        }
+
+        private void btnFontStyle_Click(object sender, EventArgs e)
+        {
+            using (FontDialog fontDialog = new FontDialog())
+            {
+                fontDialog.Font = selectedFont;
+                fontDialog.Color = selectedColor;
+                fontDialog.ShowColor = true;
+
+                if (fontDialog.ShowDialog() == DialogResult.OK)
+                {
+                    selectedFont = fontDialog.Font;
+                    selectedColor = fontDialog.Color;
+                }
+            }
+        }
+
+        // Start methode : Not Enter a Key String just a Key Number
+        private static void Not_KeyString(KeyPressEventArgs e)
+        {
+            if (e.KeyChar < 48 || e.KeyChar > 57)
+            {
+                // if you press the BACKSPACE key, the Handled property is set to false, 
+                e.Handled = e.KeyChar == 8 ? false : true;
+            }
+        }
+
+        private void txtBoxX_KeyPress(object sender, KeyPressEventArgs e) => Not_KeyString(e);
+
+        private void txtBoxY_KeyPress(object sender, KeyPressEventArgs e) => Not_KeyString(e);
+
+        private void txtBoxWidth_KeyPress(object sender, KeyPressEventArgs e) => Not_KeyString(e);
+
     }
 
     class CsvEntry
