@@ -18,12 +18,17 @@ namespace Image2PDF
         string selected_path;
         string csv_path;
         bool ScaleToFit = false;
-        bool ScaleAbsolute = false;
+        bool ScaleAbsolute = true;
+        bool centerText = false;
 
         Font selectedFont = new Font("Arial", 12);
         Color selectedColor = Color.Black;
 
         public frmMain() => InitializeComponent();
+        private void frmMain_Load(object sender, EventArgs e)
+        {
+            comboBox.SelectedIndex = 0;
+        }
         public static int SearchDirectoryTree(string path, out string[] IMGfiles)
         {
             string[] extensions = { ".jpg", ".jpeg", ".png", ".tiff" };
@@ -193,11 +198,24 @@ namespace Image2PDF
                         .SetFontColor(ConvertColor(selectedColor))
                         .SetFixedPosition(1, x, y, width);
 
+                    if (centerText)
+                    {
+                        text.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
+                        shadow.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
+                    }
+
                     if (selectedFont.Bold)
+                    {
                         text.SimulateBold();
+                        shadow.SimulateBold();
+                    }
+
 
                     if (selectedFont.Italic)
+                    {
                         text.SimulateItalic();
+                        shadow.SimulateItalic();
+                    }
 
                     if (selectedFont.Underline)
                         text.SetUnderline();
@@ -232,9 +250,15 @@ namespace Image2PDF
         private void comboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBox.Text == "ScaleToFit")
+            {
                 ScaleToFit = true;
+                ScaleAbsolute = false;
+            }
             if (comboBox.Text == "ScaleAbsolute")
+            {
                 ScaleAbsolute = true;
+                ScaleToFit = false;
+            }
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -314,6 +338,11 @@ namespace Image2PDF
         private void txtBoxY_KeyPress(object sender, KeyPressEventArgs e) => Not_KeyString(e);
 
         private void txtBoxWidth_KeyPress(object sender, KeyPressEventArgs e) => Not_KeyString(e);
+
+        private void checkBox_CheckedChanged(object sender, EventArgs e)
+        {
+            centerText = checkBox.Checked ? true : false;
+        }
 
     }
 
