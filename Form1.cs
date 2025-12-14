@@ -166,11 +166,32 @@ namespace Image2PDF
 
                     // Add text positioned over the image
                     PdfFont pdfFont = CreatePdfFont(selectedFont);
+                    string textContent = csvRow.ImageName + "\n X = " + csvRow.X + ", Y = " + csvRow.Y;
+                    float shadowOffsetX = 1.2f;
+                    float shadowOffsetY = -1f;
+                    // Convert String to Integer 
+                    int x = Convert.ToInt32(txtBoxX.Text);
+                    int y = Convert.ToInt32(txtBoxY.Text);
+                    int width = Convert.ToInt32(txtBoxWidth.Text);
 
-                    Paragraph text = new Paragraph(csvRow.ImageName + "\n X = " + csvRow.X + ", Y = " + csvRow.Y)
+                    // Shadow
+                    Paragraph shadow = new Paragraph(textContent)
                         .SetFont(pdfFont)
                         .SetFontSize(selectedFont.Size)
-                        .SetFontColor(ConvertColor(selectedColor));
+                        .SetFontColor(new iText.Kernel.Colors.DeviceRgb(120, 120, 120))
+                        .SetFixedPosition(1, x + shadowOffsetX, y + shadowOffsetY, width);
+
+                    shadow.SetProperty(
+                        iText.Layout.Properties.Property.OPACITY,
+                        0.4f
+                    );
+
+                    // Main text
+                    Paragraph text = new Paragraph(textContent)
+                        .SetFont(pdfFont)
+                        .SetFontSize(selectedFont.Size)
+                        .SetFontColor(ConvertColor(selectedColor))
+                        .SetFixedPosition(1, x, y, width);
 
                     if (selectedFont.Bold)
                         text.SimulateBold();
@@ -181,19 +202,7 @@ namespace Image2PDF
                     if (selectedFont.Underline)
                         text.SetUnderline();
 
-                    // Convert String to Integer 
-                    int x = Convert.ToInt32(txtBoxX.Text);
-                    int y = Convert.ToInt32(txtBoxY.Text);
-                    int width = Convert.ToInt32(txtBoxWidth.Text);
-
-                    // Absolute positioning (X, Y)
-                    text.SetFixedPosition(
-                        1,      // page number
-                        x,    // X position
-                        y,    // Y position
-                        width     // width
-                    );
-
+                    document.Add(shadow);
                     document.Add(text);
 
                     document.Close();
